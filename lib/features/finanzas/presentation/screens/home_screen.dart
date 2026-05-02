@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../debts/presentation/providers/debts_providers.dart';
+import '../../../savings/presentation/providers/savings_providers.dart';
 import '../providers/finanzas_providers.dart';
 import '../widgets/budget_card.dart';
 import '../widgets/error_view.dart';
@@ -25,6 +26,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(transactionsNotifierProvider.notifier).loadAll();
       ref.read(debtsNotifierProvider.notifier).loadAll();
+      ref.read(savingsNotifierProvider.notifier).loadAll();
     });
   }
 
@@ -69,6 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(transactionsNotifierProvider);
     final debtsState = ref.watch(debtsNotifierProvider);
+    final savingsState = ref.watch(savingsNotifierProvider);
     final fmt = NumberFormat.currency(
       locale: 'es_CO',
       symbol: '\$',
@@ -79,6 +82,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: const Text(AppStrings.appName),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.savings_outlined),
+            tooltip: 'Ahorros e ingresos',
+            onPressed: () => context.push('/savings'),
+          ),
           IconButton(
             icon: const Icon(Icons.ac_unit),
             tooltip: 'Mis deudas',
@@ -100,8 +108,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onRefresh: () async {
           await ref.read(transactionsNotifierProvider.notifier).loadAll();
           await ref.read(debtsNotifierProvider.notifier).loadAll();
+          await ref.read(savingsNotifierProvider.notifier).loadAll();
         },
-        child: _buildBody(state, debtsState, fmt),
+        child: _buildBody(state, debtsState, savingsState, fmt),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/add-transaction'),
@@ -111,7 +120,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildBody(state, debtsState, NumberFormat fmt) {
+  Widget _buildBody(state, debtsState, savingsState, NumberFormat fmt) {
     if (state.isLoading && state.transactions.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -132,6 +141,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: BudgetCard(summary: summary, onEditBudget: _editBudget),
           ),
+        // Tarjeta de ahorros
+        if (savingsState.accounts.isNotEmpty ||
+            savingsState.incomeSources.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Card(
+              color: AppColors.income,
+              child: InkWell(
+                onTap: () => context.push('/savings'),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.savings_outlined,
+                          color: AppColors.yellow, size: 32),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Total en ahorros',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                            Text(
+                              fmt.format(savingsState.totalSavings),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (savingsState.nextIncome != null)
+                              Text(
+                                'Próximo ingreso: ${savingsState.nextIncome!.name} en ${savingsState.nextIncome!.daysUntilNext} días',
+                                style: const TextStyle(
+                                  color: AppColors.yellow,
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        // Tarjeta de deudas
         if (debtsState.debts.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

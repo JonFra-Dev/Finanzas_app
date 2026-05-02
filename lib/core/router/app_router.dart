@@ -13,6 +13,11 @@ import '../../features/finanzas/presentation/screens/add_transaction_screen.dart
 import '../../features/finanzas/presentation/screens/home_screen.dart';
 import '../../features/finanzas/presentation/screens/profile_screen.dart';
 import '../../features/finanzas/presentation/screens/statistics_screen.dart';
+import '../../features/savings/presentation/screens/account_detail_screen.dart';
+import '../../features/savings/presentation/screens/add_account_screen.dart';
+import '../../features/savings/presentation/screens/add_income_source_screen.dart';
+import '../../features/savings/presentation/screens/income_source_detail_screen.dart';
+import '../../features/savings/presentation/screens/savings_dashboard_screen.dart';
 
 /// go_router con redirect basado en el estado de autenticación.
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -63,7 +68,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'profile',
         builder: (_, __) => const ProfileScreen(),
       ),
-      // ============== DEBTS (snowball) ==============
+      // ============== DEBTS ==============
       GoRoute(
         path: '/debts',
         name: 'debts',
@@ -84,6 +89,38 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             name: 'debt-detail',
             builder: (_, state) =>
                 DebtDetailScreen(debtId: state.pathParameters['id']!),
+          ),
+        ],
+      ),
+      // ============== SAVINGS ==============
+      GoRoute(
+        path: '/savings',
+        name: 'savings',
+        builder: (_, __) => const SavingsDashboardScreen(),
+        routes: [
+          GoRoute(
+            path: 'account/add',
+            name: 'savings-account-add',
+            builder: (_, __) => const AddAccountScreen(),
+          ),
+          GoRoute(
+            path: 'account/:id',
+            name: 'savings-account-detail',
+            builder: (_, state) => AccountDetailScreen(
+              accountId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: 'income/add',
+            name: 'savings-income-add',
+            builder: (_, __) => const AddIncomeSourceScreen(),
+          ),
+          GoRoute(
+            path: 'income/:id',
+            name: 'savings-income-detail',
+            builder: (_, state) => IncomeSourceDetailScreen(
+              sourceId: state.pathParameters['id']!,
+            ),
           ),
         ],
       ),
