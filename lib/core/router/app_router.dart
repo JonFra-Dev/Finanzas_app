@@ -5,6 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/debts/presentation/screens/add_debt_screen.dart';
+import '../../features/debts/presentation/screens/debt_detail_screen.dart';
+import '../../features/debts/presentation/screens/debts_list_screen.dart';
+import '../../features/debts/presentation/screens/snowball_plan_screen.dart';
 import '../../features/finanzas/presentation/screens/add_transaction_screen.dart';
 import '../../features/finanzas/presentation/screens/home_screen.dart';
 import '../../features/finanzas/presentation/screens/profile_screen.dart';
@@ -12,7 +16,6 @@ import '../../features/finanzas/presentation/screens/statistics_screen.dart';
 
 /// go_router con redirect basado en el estado de autenticación.
 final goRouterProvider = Provider<GoRouter>((ref) {
-  // Listener que invalida el router cuando cambia el auth state.
   final notifier = ValueNotifier(0);
   ref.listen(authNotifierProvider, (_, __) => notifier.value++);
 
@@ -59,6 +62,30 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile',
         name: 'profile',
         builder: (_, __) => const ProfileScreen(),
+      ),
+      // ============== DEBTS (snowball) ==============
+      GoRoute(
+        path: '/debts',
+        name: 'debts',
+        builder: (_, __) => const DebtsListScreen(),
+        routes: [
+          GoRoute(
+            path: 'add',
+            name: 'debt-add',
+            builder: (_, __) => const AddDebtScreen(),
+          ),
+          GoRoute(
+            path: 'plan',
+            name: 'snowball-plan',
+            builder: (_, __) => const SnowballPlanScreen(),
+          ),
+          GoRoute(
+            path: ':id',
+            name: 'debt-detail',
+            builder: (_, state) =>
+                DebtDetailScreen(debtId: state.pathParameters['id']!),
+          ),
+        ],
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

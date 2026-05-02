@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../debts/presentation/providers/debts_providers.dart';
 import '../providers/finanzas_providers.dart';
 import '../widgets/budget_card.dart';
 import '../widgets/error_view.dart';
@@ -22,6 +24,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(transactionsNotifierProvider.notifier).loadAll();
+      ref.read(debtsNotifierProvider.notifier).loadAll();
     });
   }
 
@@ -65,11 +68,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(transactionsNotifierProvider);
+    final debtsState = ref.watch(debtsNotifierProvider);
+    final fmt = NumberFormat.currency(
+      locale: 'es_CO',
+      symbol: '\$',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.appName),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.ac_unit),
+            tooltip: 'Mis deudas',
+            onPressed: () => context.push('/debts'),
+          ),
           IconButton(
             icon: const Icon(Icons.bar_chart),
             tooltip: AppStrings.statistics,
@@ -83,10 +97,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref
-            .read(transactionsNotifierProvider.notifier)
-            .loadAll(),
-        child: _buildBody(state),
+        onRefresh: () async {
+          await ref.read(transactionsNotifierProvider.notifier).loadAll();
+          await ref.read(debtsNotifierProvider.notifier).loadAll();
+        },
+        child: _buildBody(state, debtsState, fmt),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/add-transaction'),
@@ -96,7 +111,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildBody(state) {
+  Widget _buildBody(state, debtsState, NumberFormat fmt) {
     if (state.isLoading && state.transactions.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -116,6 +131,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: BudgetCard(summary: summary, onEditBudget: _editBudget),
+          ),
+        if (debtsState.debts.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Card(
+              color: AppColors.purple,
+              child: InkWell(
+                onTap: () => context.push('/debts'),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.ac_unit,
+                          color: AppColors.yellow, size: 32),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Total en deudas',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                            Text(
+                              fmt.format(debtsState.totalBalance),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (debtsState.nextTarget != null)
+                              Text(
+                                'Próximo objetivo: ${debtsState.nextTarget!.name}',
+                                style: const TextStyle(
+                                  color: AppColors.yellow,
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         const Padding(
           padding: EdgeInsets.fromLTRB(20, 24, 20, 8),
